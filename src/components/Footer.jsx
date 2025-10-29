@@ -6,7 +6,7 @@ export default function Footer() {
           {/* Logo + Tagline */}
           <div>
             <img
-              src="/logo2.svg"
+              src="/logo2.svg"       // 👈 Make sure logo2.svg is inside your public/ folder
               alt="Unbox Insight Logo"
               className="h-10 w-auto mb-4"
             />
@@ -44,7 +44,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar */}
+        {/* Bottom Copyright Bar */}
         <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400">
           <p>&copy; 2025 UnboxInSight. All rights reserved.</p>
         </div>
