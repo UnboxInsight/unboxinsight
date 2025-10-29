@@ -52,7 +52,7 @@ unboxinsight/
 
 ## 📞 Support
 
-Email: info@unboxinsight.com
+Email: contact@unboxinsight.com
 Website: www.unboxinsight.com
 
 ---
