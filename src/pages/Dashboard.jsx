@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { signOut, onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
-import { auth, db } from '../firebaseConfig'
+import { supabase } from '../supabaseClient'
 
 export default function Dashboard() {
   const [user, setUser] = useState(null)
@@ -11,31 +9,39 @@ export default function Dashboard() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser)
+    checkUser()
+  }, [])
 
-        try {
-          const userDoc = await getDoc(doc(db, 'users', currentUser.uid))
-          if (userDoc.exists()) {
-            setUserData(userDoc.data())
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error)
-        }
-      } else {
+  const checkUser = async () => {
+    try {
+      // Get current user from Supabase
+      const { data: { user: currentUser }, error } = await supabase.auth.getUser()
+
+      if (error || !currentUser) {
         navigate('/login')
+        return
       }
-      setLoading(false)
-    })
 
-    return () => unsubscribe()
-  }, [navigate])
+      setUser(currentUser)
+      setUserData({
+        name: currentUser.user_metadata?.name || currentUser.email,
+        college: currentUser.user_metadata?.college || 'Not set',
+        email: currentUser.email
+      })
+    } catch (err) {
+      console.error('Error fetching user:', err)
+      navigate('/login')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleLogout = async () => {
     try {
-      await signOut(auth)
-      navigate('/login')
+      const { error } = await supabase.auth.signOut()
+      if (!error) {
+        navigate('/login')
+      }
     } catch (error) {
       console.error('Error logging out:', error)
     }
@@ -49,12 +55,20 @@ export default function Dashboard() {
     )
   }
 
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-2xl text-ui-navy">Redirecting...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-bold text-ui-navy">
-            Welcome, {userData?.name || user?.displayName || 'Student'}!
+            Welcome, {userData?.name || 'Student'}!
           </h1>
           <p className="text-gray-600 mt-2">
             {userData?.college || 'Add your college in profile settings'}
@@ -91,11 +105,11 @@ export default function Dashboard() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
-            <p className="text-lg text-gray-800">{userData?.name || user?.displayName || 'N/A'}</p>
+            <p className="text-lg text-gray-800">{userData?.name || 'N/A'}</p>
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-            <p className="text-lg text-gray-800">{user?.email}</p>
+            <p className="text-lg text-gray-800">{userData?.email || 'N/A'}</p>
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">College</label>
@@ -111,10 +125,7 @@ export default function Dashboard() {
         <h2 className="text-2xl font-bold text-ui-navy mb-6">Recent Activity</h2>
         <div className="text-center py-12 text-gray-500">
           <p>No activity yet. Start by joining a competition!</p>
-          <button 
-            onClick={() => navigate('/competitions')}
-            className="mt-4 px-6 py-2 bg-ui-orange text-white rounded-lg hover:bg-opacity-90 transition"
-          >
+          <button className="mt-4 px-6 py-2 bg-ui-orange text-white rounded-lg hover:bg-opacity-90 transition">
             Browse Competitions
           </button>
         </div>
